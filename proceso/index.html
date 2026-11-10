@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Cómo se hizo · ¿Tu tabla está en 3FN?</title>
+  <meta name="description" content="De los ejercicios de normalización de Mario y David a una herramienta que calcula cierres, claves, formas normales y descomposiciones 3FN y BCNF.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bangers&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <script type="module" src="../js/proceso.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <header class="cabecera">
+    <span class="kanji" aria-hidden="true">記録</span>
+    <div>
+      <p class="antetitulo">Proceso · ¿Tu tabla está en 3FN?</p>
+      <h1>Cómo se hizo</h1>
+    </div>
+    <nav class="nav" aria-label="Secciones">
+      <a class="boton-linea" href="../">Volver a la herramienta</a>
+      <button type="button" class="boton-linea" id="tema">Tema: auto</button>
+    </nav>
+  </header>
+
+  <main class="articulo" id="contenido">
+    <nav class="indice vineta" aria-label="En esta página">
+      <ol>
+        <li><a href="#problema">El problema</a></li>
+        <li><a href="#teoria">La teoría</a></li>
+        <li><a href="#ejercicio">El ejercicio, paso a paso</a></li>
+        <li><a href="#graficas">Gráficas</a></li>
+        <li><a href="#diseno">Decisiones de diseño</a></li>
+        <li><a href="#limites">Limitaciones</a></li>
+        <li><a href="#erratas">Fe de erratas</a></li>
+        <li><a href="#fuentes">Fuentes</a></li>
+      </ol>
+    </nav>
+
+    <section id="problema" class="bloque">
+      <h2>El problema</h2>
+      <p>En la clase de bases de datos nos dieron tablas «todo en uno» para normalizar: una de préstamos de biblioteca y otra de notas de estudiantes, y luego tuvimos que diseñar las nuestras (una clínica, una facturación y unas guías de envío) y entregarlas normalizadas. Lo hicimos a mano, en hojas de cálculo, mirando las filas y moviendo columnas.</p>
+      <p>El problema de hacerlo a ojo es que <strong>se escapan cosas</strong>: una dependencia que no está escrita pero se deduce, una columna que se queda sin tabla, una tabla que vuelve a mezclar dos temas. La herramienta convierte esa intuición en algoritmos que se pueden verificar: le das los atributos y las dependencias, y responde en qué forma normal está la tabla, por qué, y cómo partirla sin perder nada.</p>
+      <dl class="glosario">
+        <dt>Dependencia funcional (DF)</dt><dd><code>X → Y</code>: si dos filas coinciden en X, coinciden en Y. «La cédula determina el nombre».</dd>
+        <dt>Cierre X⁺</dt><dd>Todo lo que se puede deducir a partir de X aplicando las DF una y otra vez.</dd>
+        <dt>Superclave</dt><dd>Un conjunto de atributos cuyo cierre es la tabla entera: identifica cada fila.</dd>
+        <dt>Clave candidata</dt><dd>Una superclave mínima: si le quitas cualquier atributo deja de serlo.</dd>
+        <dt>Atributo primo</dt><dd>El que forma parte de alguna clave candidata.</dd>
+        <dt>Recubrimiento mínimo</dt><dd>Las mismas DF, sin nada que sobre: un atributo a la derecha, nada extraño a la izquierda, ninguna DF deducible de las otras.</dd>
+        <dt>Reunión sin pérdida</dt><dd>Al volver a juntar las tablas partidas (JOIN natural) sale exactamente la original, sin filas inventadas.</dd>
+        <dt>Preservar dependencias</dt><dd>Cada DF se puede vigilar dentro de una sola tabla, sin tener que juntarlas.</dd>
+      </dl>
+    </section>
+
+    <section id="teoria" class="bloque">
+      <h2>La teoría</h2>
+      <p>Edgar F. Codd propuso el modelo relacional en 1970 y, un año después, las tres primeras formas normales. Raymond Boyce y Codd afinaron la tercera en 1974 (BCNF). Cada forma pide un poco más que la anterior:</p>
+      <ol class="etapas">
+        <li><strong>1FN.</strong> Valores atómicos: una celda, un dato; nada de listas ni grupos repetidos. <em>La herramienta la supone</em>: no se puede deducir de las DF.</li>
+        <li><strong>2FN.</strong> 1FN y ningún atributo no primo depende de <em>una parte</em> de una clave (sin dependencias parciales).</li>
+        <li><strong>3FN.</strong> Para toda DF <code>X → A</code>: X es superclave o A es primo. Quita las dependencias transitivas (clave → X → A).</li>
+        <li><strong>BCNF.</strong> Para toda DF <code>X → A</code>: X es superclave. Sin excepciones para los primos.</li>
+      </ol>
+      <h3>Los algoritmos que corren en la herramienta</h3>
+      <div class="tuberia-envoltura">
+        <ol class="tuberia">
+          <li><span class="paso">1</span><strong>Cierre</strong><small>Aplicar DF hasta que nada cambie (axiomas de Armstrong, 1974).</small></li>
+          <li><span class="paso">2</span><strong>Claves</strong><small>Lo que nunca está a la derecha va en toda clave; lo que solo está a la derecha, en ninguna. Se prueba el resto por tamaño.</small></li>
+          <li><span class="paso">3</span><strong>Recubrimiento</strong><small>Separar, quitar atributos extraños, quitar DF redundantes.</small></li>
+          <li><span class="paso">4</span><strong>Diagnóstico</strong><small>Partes de clave → 2FN; DF escritas contra superclaves y primos → 3FN y BCNF.</small></li>
+          <li><span class="paso">5</span><strong>Síntesis 3FN</strong><small>Bernstein (1976): una tabla por lado izquierdo + una clave si falta.</small></li>
+          <li><span class="paso">6</span><strong>BCNF</strong><small>Partir por cada X → Y que rompa: X⁺ y el resto.</small></li>
+          <li><span class="paso">7</span><strong>Pruebas</strong><small>Tablero «chase» (Aho, Beeri y Ullman, 1979) y preservación de DF.</small></li>
+        </ol>
+      </div>
+      <p class="nota-fuente">Buscar todas las claves es exponencial en el peor caso (saber si un atributo es primo es NP-completo: Lucchesi y Osborn, 1978; Beeri y Bernstein, 1979). Con la poda de los pasos 2 y la de «no probar superconjuntos de una clave ya hallada», los ejemplos reales se resuelven en milisegundos.</p>
+    </section>
+
+    <section id="ejercicio" class="bloque">
+      <h2>El ejercicio, paso a paso</h2>
+      <p>Es el ejercicio 2 de la hoja de normalización: una tabla con las notas de cada estudiante en cada materia, junto con los datos del estudiante, de su representante y de la materia. Estas son sus seis filas. <span class="tenue">Los nombres, documentos, direcciones y profesores se cambiaron por etiquetas; materias, semestres, edades y notas son las de la hoja.</span></p>
+      <div id="tabla-original" class="vineta"></div>
+
+      <div class="dos-col">
+        <article class="vineta">
+          <h3>1 · Las dependencias</h3>
+          <p>Salen del significado de cada columna, no de las seis filas:</p>
+          <pre class="codigo">CedulaE -&gt; NombreEst, EdadE, NombreRep
+NombreRep -&gt; DireccionRep
+NombreMat -&gt; SemestreM, ProfesorM
+CedulaE, NombreMat -&gt; N1, N2, N3</pre>
+          <p>Las anomalías saltan a la vista: para cambiar la dirección de un representante hay que tocar tres filas; no se puede registrar una materia sin un estudiante que la vea; y si se borra al estudiante 2, se pierde que Inglés es de cuarto semestre.</p>
+        </article>
+        <article class="vineta">
+          <h3>2 · Cierre y clave</h3>
+          <div id="paso-cierre"><p class="tenue">Calculando…</p></div>
+        </article>
+      </div>
+
+      <div class="dos-col">
+        <article class="vineta">
+          <h3>3 · Qué viola qué</h3>
+          <div id="paso-violaciones"></div>
+        </article>
+        <article class="vineta">
+          <h3>4 · El grafo</h3>
+          <div id="paso-grafo" class="grafo-caja"></div>
+          <p class="tenue">Las flechas rojas son las dependencias que rompen 2FN (parciales) o 3FN (transitivas).</p>
+        </article>
+      </div>
+
+      <h3 class="separado">5 · Síntesis de Bernstein: cuatro tablas, cada una con un tema</h3>
+      <div id="paso-tablas" class="tablas-4"></div>
+      <p id="paso-pruebas" class="nota-fuente"></p>
+
+      <div class="dos-col">
+        <article class="vineta">
+          <h3>La propuesta de solución que trae la hoja</h3>
+          <div id="hoja-tablas"></div>
+        </article>
+        <article class="vineta errata">
+          <h3>Revisada con el mismo motor (calculado aquí)</h3>
+          <div id="hoja-revision"></div>
+        </article>
+      </div>
+      <p>La hoja acierta en lo difícil (separar al estudiante de sus notas y la clave compuesta <code>CedulaE, NombreMat</code>), pero se le escapa la tabla de materias. Ese es justamente el tipo de error que la herramienta hace imposible: si una columna no queda en ninguna tabla, la síntesis la pone; si una DF no se puede vigilar, la marca.</p>
+      <p>En nuestra entrega «Tablas normalizadas» hicimos lo mismo con diseños propios: la clínica (médico, paciente, última consulta), la facturación y las guías de envío. La clínica y la facturación están precargadas en la herramienta; la facturación tiene una decisión que va más allá de las DF y que cuento en <a href="#diseno">diseño</a>.</p>
+    </section>
+
+    <section id="graficas" class="bloque">
+      <h2>Gráficas</h2>
+      <div class="dos-col">
+        <figure class="vineta figura">
+          <h3>¿Cuánto se repite?</h3>
+          <div id="g-redundancia" class="g-caja"></div>
+          <figcaption>Una celda «repetida» guarda un dato que ya estaba en otra fila (p. ej. el nombre del estudiante en su segunda y tercera materia). En la tabla original son <b id="cifra-redundancia">…</b>. Calculado aquí sobre las seis filas de la hoja.</figcaption>
+        </figure>
+        <figure class="vineta figura">
+          <h3>Y crece con cada materia</h3>
+          <div id="g-curva" class="g-caja"></div>
+          <figcaption>Si cada estudiante ve m materias, se repiten 4 datos (nombre, edad, representante, dirección) en m − 1 filas: 4(m − 1) / 11m. Calculado aquí, suponiendo materias distintas por estudiante.</figcaption>
+        </figure>
+      </div>
+      <figure class="vineta figura">
+        <h3>La poda de claves</h3>
+        <div id="g-poda" class="g-caja g-scroll"></div>
+        <figcaption>Cierres que necesitó la herramienta para hallar todas las claves de cada ejemplo, frente a probar todas las combinaciones. Calculado aquí con js/fd.js.</figcaption>
+      </figure>
+      <div id="tabla-ejemplos" class="vineta"></div>
+    </section>
+
+    <section id="diseno" class="bloque">
+      <h2>Decisiones de diseño</h2>
+      <ol class="decisiones">
+        <li><strong>Formato de texto, no formularios.</strong> <code>A, B -&gt; C</code> es como se escribe en el tablero y en los libros. Si todos los atributos son de una letra, <code>AB -&gt; C</code> también vale.</li>
+        <li><strong>Una escalera de niveles.</strong> Las formas normales son acumulativas, como niveles de un juego: se ve cuál se alcanzó y cuál falló.</li>
+        <li><strong>Cada violación dice su porqué</strong> con los nombres de tus atributos, y al pasar el puntero se ilumina su flecha en el grafo.</li>
+        <li><strong>El grafo en columnas por «saltos desde la clave».</strong> La transitividad se ve como distancia: lo que está a dos columnas de la clave es sospechoso. Las flechas que vuelven hacia atrás (como <code>CP → Ciudad</code>) pasan por debajo para no tapar las demás.</li>
+        <li><strong>Tablas como cartas.</strong> Cada tabla resultante es una carta con su clave (PK), número de atributos y DF que «custodia», y su sello de forma normal.</li>
+        <li><strong>Dos descomposiciones, sin elegir por ti.</strong> 3FN siempre preserva dependencias; BCNF a veces no (dirección postal, R(A…E)). La herramienta muestra el costo de cada una.</li>
+        <li><strong>El precio en la factura.</strong> En nuestra entrega dejamos el valor unitario también en el detalle de la factura, para conservar el precio con el que se vendió. Eso es una decisión de negocio, no un error de normalización: el ejemplo precargado usa el precio de lista (<code>CodProducto -&gt; ValorUnitario</code>); para el precio histórico se agrega un atributo nuevo, <code>NumFactura, CodProducto -&gt; PrecioVenta</code>, y la herramienta lo deja en la tabla del detalle.</li>
+      </ol>
+      <div class="dos-col">
+        <div>
+          <h3>Paleta</h3>
+          <div class="paleta">
+            <span class="p1">Papel <code>#F9F9F7</code></span>
+            <span class="p2 osc">Tinta <code>#0A090A</code></span>
+            <span class="p3 osc">Rojo: viola <code>#CB433E</code></span>
+            <span class="p4">Cian: clave <code>#438FB8</code></span>
+            <span class="p5 osc">Noche <code>#141C33</code></span>
+            <span class="p6 osc">Bermellón <code>#BA3937</code></span>
+          </div>
+        </div>
+        <div>
+          <h3>Versiones</h3>
+          <div class="versiones">
+            <div class="boceto"><b>v1</b> · una lista de texto: «clave: AB · 3FN: no». <s>Correcta pero no se entendía por qué.</s><p>Descartada.</p></div>
+            <div class="boceto"><b>v2</b> · grafo + escalera + cartas, con la explicación junto a cada violación.<p>La actual.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="limites" class="bloque">
+      <h2>Limitaciones</h2>
+      <ul>
+        <li><strong>Solo DF.</strong> No ve dependencias multivaluadas ni de reunión, así que no dice nada de 4FN ni 5FN.</li>
+        <li><strong>1FN se supone.</strong> Si una celda guarda «Matemáticas, Inglés», eso no sale de las flechas.</li>
+        <li><strong>Las DF son tuyas.</strong> La herramienta no las adivina de los datos: unas filas pueden <em>refutar</em> una DF, nunca probarla (en la hoja, nada en seis filas impide que un profesor determine el semestre, y no es así).</li>
+        <li><strong>Tope de 30 atributos</strong> y búsquedas exponenciales: con más de 20 atributos a ambos lados de las flechas, deja de buscar claves y lo avisa.</li>
+        <li><strong>BCNF no es única.</strong> El resultado depende de qué violación se parte primero; la herramienta empieza por las DF del recubrimiento mínimo.</li>
+        <li><strong>Síntesis «de libro».</strong> No fusiona tablas con claves equivalentes (el paso extra del algoritmo original de Bernstein), así que en casos raros puede dar una tabla de más.</li>
+      </ul>
+    </section>
+
+    <section id="erratas" class="bloque">
+      <h2>Fe de erratas de las fuentes</h2>
+      <div class="vineta errata">
+        <ul>
+          <li>Hoja, ejercicio 1: una fecha de devolución está escrita «20/04/20121» (un dígito de más) y como texto, no como fecha.</li>
+          <li>Hoja, ejercicio 2: la columna del representante se llama «NomnbreRep» y la de su dirección «DireccionRe». Aquí se usan <code>NombreRep</code> y <code>DireccionRep</code>.</li>
+          <li>Hoja, ejercicio 2: en la última tabla de la solución un estudiante aparece con <code>SemestreM</code> 3 y 4 a la vez (porque el semestre es de la materia, no del estudiante) y un <code>SERIAL</code> salta de 2 a 16. <code>ProfesorM</code> no quedó en ninguna tabla.</li>
+          <li>Nuestra entrega, ejercicio 1: en los datos de prueba un mismo médico aparece con dos direcciones distintas, lo que contradice <code>Doctor → DirDoctor</code>, y varios pacientes de la tabla de consultas no están en la de pacientes. Las DF del ejemplo precargado son las del enunciado, no las de esos datos.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="fuentes" class="bloque">
+      <h2>Fuentes</h2>
+      <ol class="fuentes">
+        <li>Hoja de ejercicios de normalización (biblioteca y notas), clase de bases de datos, febrero de 2024. Material de trabajo: no se publica.</li>
+        <li>Mario Puerta y David Rincón, «Tablas normalizadas» (clínica, facturación y guías de envío), febrero de 2024. Material de trabajo: no se publica.</li>
+        <li>Codd, E. F. (1970). A relational model of data for large shared data banks. <em>Communications of the ACM</em>, 13(6), 377–387.</li>
+        <li>Codd, E. F. (1972). Further normalization of the data base relational model. En R. Rustin (ed.), <em>Data Base Systems</em> (pp. 33–64). Prentice-Hall.</li>
+        <li>Codd, E. F. (1974). Recent investigations in relational data base systems. <em>Proceedings of IFIP Congress 74</em>, 1017–1021.</li>
+        <li>Armstrong, W. W. (1974). Dependency structures of data base relationships. <em>Proceedings of IFIP Congress 74</em>, 580–583.</li>
+        <li>Bernstein, P. A. (1976). Synthesizing third normal form relations from functional dependencies. <em>ACM Transactions on Database Systems</em>, 1(4), 277–298.</li>
+        <li>Lucchesi, C. L. y Osborn, S. L. (1978). Candidate keys for relations. <em>Journal of Computer and System Sciences</em>, 17(2), 270–279.</li>
+        <li>Beeri, C. y Bernstein, P. A. (1979). Computational problems related to the design of normal form relational schemas. <em>ACM Transactions on Database Systems</em>, 4(1), 30–59.</li>
+        <li>Aho, A. V., Beeri, C. y Ullman, J. D. (1979). The theory of joins in relational databases. <em>ACM Transactions on Database Systems</em>, 4(3), 297–314.</li>
+        <li>Elmasri, R. y Navathe, S. B. (2016). <em>Fundamentals of Database Systems</em> (7.ª ed.), caps. 14 y 15. Pearson. (Ejemplos EMP_PROJ y EMP_DEPT de las pruebas.)</li>
+        <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2019). <em>Database System Concepts</em> (7.ª ed.), cap. 7. McGraw-Hill. (Recubrimiento canónico y dept_advisor.)</li>
+        <li>Garcia-Molina, H., Ullman, J. D. y Widom, J. (2008). <em>Database Systems: The Complete Book</em> (2.ª ed.), cap. 3. Pearson. (Ejemplo de cierre.)</li>
+      </ol>
+    </section>
+
+    <a class="volver" href="../">Volver a la herramienta</a>
+  </main>
+
+  <footer class="pie">
+    <p class="creditos"><a href="https://github.com/ale0009" target="_blank" rel="noopener">Mario Puerta «ale0009»</a> × <a href="https://www.linkedin.com/in/davidalexanderrinconcorredorkuronoma/" target="_blank" rel="noopener">David Rincón «Kuronoma»</a> · <a href="#">Portafolio</a></p>
+    <p>Sale de nuestros ejercicios de normalización de bases de datos. Código MIT · <a href="../">La herramienta</a></p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>¿Tu tabla está en 3FN?</title>
+  <meta name="description" content="Escribe los atributos y las dependencias funcionales: calcula cierres, claves candidatas, recubrimiento mínimo, la forma normal (2FN, 3FN, BCNF) y propone la descomposición.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bangers&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="css/estilo.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#principal">Saltar al contenido</a>
+  <header class="cabecera">
+    <span class="kanji" aria-hidden="true">正規</span>
+    <div>
+      <p class="antetitulo">Normalización relacional · 1FN → BCNF · todo en tu navegador</p>
+      <h1>¿Tu tabla está en 3FN?</h1>
+    </div>
+    <nav class="nav" aria-label="Secciones">
+      <a class="boton-linea" href="proceso/">Cómo se hizo</a>
+      <button class="boton-linea" id="tema" type="button">Tema: auto</button>
+    </nav>
+  </header>
+
+  <main id="principal" class="tablero">
+    <section class="vineta entrada" aria-labelledby="t-entrada">
+      <h2 id="t-entrada" class="rotulo">Tu esquema</h2>
+      <div class="ejemplos" role="group" aria-label="Cargar un ejemplo">
+        <span class="ejemplos-t">Ejemplos:</span>
+        <span id="botones-ejemplo" class="ejemplos-botones"></span>
+      </div>
+      <p class="estado-ejemplo"><span id="chip-ejemplo" class="chip chip-ejemplo">Ejemplo</span> <span id="origen-ejemplo" class="dato"></span></p>
+      <label class="etiqueta" for="atributos">Atributos <span class="tenue">(separados por comas)</span></label>
+      <textarea id="atributos" class="campo area area-corta" rows="2" spellcheck="false" autocomplete="off"></textarea>
+      <label class="etiqueta" for="dfs">Dependencias funcionales <span class="tenue">(una por línea: <code>A, B -&gt; C</code>)</span></label>
+      <textarea id="dfs" class="campo area" rows="6" spellcheck="false" autocomplete="off"></textarea>
+      <div id="mensajes" class="mensajes" aria-live="polite"></div>
+    </section>
+
+    <section class="vineta veredicto-panel" aria-labelledby="t-veredicto">
+      <h2 id="t-veredicto" class="rotulo">Veredicto</h2>
+      <ol class="escalera" id="escalera" aria-label="Nivel alcanzado">
+        <li data-n="1FN"><span>1FN</span><small>atómica</small></li>
+        <li data-n="2FN"><span>2FN</span><small>sin parciales</small></li>
+        <li data-n="3FN"><span>3FN</span><small>sin transitivas</small></li>
+        <li data-n="BCNF"><span>BCNF</span><small>solo superclaves</small></li>
+      </ol>
+      <p class="veredicto" id="veredicto" aria-live="polite">…</p>
+      <p class="sub-veredicto" id="sub-veredicto"></p>
+      <ol id="violaciones" class="violaciones"></ol>
+    </section>
+
+    <section class="vineta grafo-panel" aria-labelledby="t-grafo">
+      <h2 id="t-grafo" class="rotulo">Grafo de dependencias</h2>
+      <p class="leyenda"><span class="z z-clave">clave</span> <span class="z z-primo">primo</span> <span class="z z-normal">no primo</span> <span class="z z-mala">dependencia que viola</span> <span class="desliza">desliza el grafo →</span></p>
+      <div id="grafo" class="grafo-caja" tabindex="0" aria-label="Grafo de dependencias (desplazable)"></div>
+    </section>
+
+    <section class="vineta claves-panel" aria-labelledby="t-claves">
+      <h2 id="t-claves" class="rotulo">Claves candidatas</h2>
+      <div id="claves" class="claves"></div>
+      <p id="busqueda" class="tenue"></p>
+      <h3 class="subt" id="t-cierre">Calcula un cierre</h3>
+      <p class="tenue">Toca atributos para formar X y ver X⁺ paso a paso.</p>
+      <div id="selector" class="selector" role="group" aria-labelledby="t-cierre"></div>
+      <p id="cierre" class="cierre" aria-live="polite"></p>
+      <ol id="pasos" class="pasos"></ol>
+    </section>
+
+    <section class="vineta recubrimiento-panel" aria-labelledby="t-rec">
+      <h2 id="t-rec" class="rotulo">Recubrimiento mínimo</h2>
+      <ul id="recubrimiento" class="lista-df"></ul>
+      <ul id="registro" class="registro"></ul>
+    </section>
+
+    <section class="vineta descomposicion" aria-labelledby="t-desc">
+      <h2 id="t-desc" class="rotulo rotulo-rojo">Descomposición propuesta</h2>
+      <div class="pestanas" role="tablist" aria-label="Tipo de descomposición">
+        <button role="tab" id="tab-3fn" aria-controls="panel-desc" aria-selected="true" class="pestana" data-modo="tercera" type="button">3FN · síntesis de Bernstein</button>
+        <button role="tab" id="tab-bcnf" aria-controls="panel-desc" aria-selected="false" class="pestana" data-modo="bcnf" type="button" tabindex="-1">BCNF · partir violaciones</button>
+      </div>
+      <div id="panel-desc" role="tabpanel" aria-labelledby="tab-3fn">
+        <p id="desc-nota" class="tenue"></p>
+        <div id="cartas" class="cartas"></div>
+        <div id="pruebas" class="pruebas-desc"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p class="creditos"><a href="https://github.com/ale0009" target="_blank" rel="noopener">Mario Puerta «ale0009»</a> × <a href="https://www.linkedin.com/in/davidalexanderrinconcorredorkuronoma/" target="_blank" rel="noopener">David Rincón «Kuronoma»</a> · <a href="#">Portafolio</a></p>
+    <p>Sale de nuestros ejercicios de normalización de bases de datos. Supone 1FN (valores atómicos) y solo dependencias funcionales. Código MIT · <a href="proceso/">Cómo se hizo</a></p>
+  </footer>
+</body>
+</html>

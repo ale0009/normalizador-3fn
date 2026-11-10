@@ -1,0 +1,9 @@
+{
+  "name": "normalizador-3fn",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "¿Tu tabla está en 3FN? Cierres, claves candidatas, recubrimiento mínimo, formas normales y descomposición 3FN/BCNF en el navegador.",
+  "scripts": { "test": "node --test" },
+  "license": "MIT"
+}
