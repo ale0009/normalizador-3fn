@@ -205,7 +205,7 @@ CedulaE, NombreMat -&gt; N1, N2, N3</pre>
           <li>Hoja, ejercicio 1: una fecha de devolución está escrita «20/04/20121» (un dígito de más) y como texto, no como fecha.</li>
           <li>Hoja, ejercicio 2: la columna del representante se llama «NomnbreRep» y la de su dirección «DireccionRe». Aquí se usan <code>NombreRep</code> y <code>DireccionRep</code>.</li>
           <li>Hoja, ejercicio 2: en la última tabla de la solución un estudiante aparece con <code>SemestreM</code> 3 y 4 a la vez (porque el semestre es de la materia, no del estudiante) y un <code>SERIAL</code> salta de 2 a 16. <code>ProfesorM</code> no quedó en ninguna tabla.</li>
-          <li>Nuestra entrega, ejercicio 1: en los datos de prueba un mismo médico aparece con dos direcciones distintas, lo que contradice <code>Doctor → DirDoctor</code>, y varios pacientes de la tabla de consultas no están en la de pacientes. Las DF del ejemplo precargado son las del enunciado, no las de esos datos.</li>
+          <li><strong>Nuestra entrega, ejercicio 1 (la clínica).</strong> <b>El trabajo decía</b> que se cumple la dependencia <code>Doctor → DirDoctor</code> (cada médico tiene una sola dirección), pero en sus datos de prueba un mismo médico aparece con dos direcciones distintas, y varios pacientes de la tabla de consultas no están en la de pacientes. <b>Lo correcto:</b> los datos de prueba deben respetar las dependencias que se declaran; si no, las tablas no demuestran nada. <b>La herramienta usa</b> en el ejemplo precargado las dependencias del enunciado, no las de esos datos.</li>
         </ul>
       </div>
     </section>
